@@ -1,1 +1,2 @@
-# Numerical-Solution-Nonlinear-Equations
+# Numerical Solution Nonlinear Equations
+Численные методы обработки сигналов в условиях помех
