@@ -174,15 +174,54 @@ def MNK(X, Y, K = 3):
 
     def Pln(x,i): return x**i
 
-    N = len(X)
-    Ai, Bi = [], []
-
+    Ai, Bi, N = [], [], len(X) 
     for i in range(K):
-        Ai.append([])
-        for j in range(K): Ai[i].append(sum([Pln(X[n],i)*Pln(X[n],j) for n in range(N)]))
+        Ai.append([sum([Pln(X[n],i)*Pln(X[n],j) for n in range(N)]) for j in range(K)])
         Bi.append(sum([Pln(X[n],i)*Y[n] for n in range(N)]))
 
     return Ai, Bi
+
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+
+# Метод расчёта скалярного произведения двух векторо
+def ScalarProduct(A, B, L = 2): return sum([ A[i]*B[i] for i in range(L)])
+
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+
+# Нормирование вектора
+def VectorNorm(A): return [ i/np.sqrt(ScalarProduct(A,A,len(A))) for i in A ]
+
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+
+# Вычисление матриц Q и R
+def QR(A):
+
+    # Первая конвертация
+    Ac = np.copy(A)
+    At = np.transpose(Ac)
+    Q  = np.copy(At) 
+    Qt = [VectorNorm(Q[0])]
+                               
+    # Нахождение Q
+    for k in range(1,len(Q)):
+        Ql = [ i for i in Q[k] ] 
+        for j in range(k):
+            V = ScalarProduct(Qt[j],At[k],len(Qt[j]))
+            for i in range(len(Ql)):
+                Ql[i] -= float(float(Qt[j][i]) * float(V))
+        Qt.append(VectorNorm(Ql))
+    
+    # Находим R
+    R = np.dot(Qt,A)
+    for x in range(len(R)):
+        for y in range(len(R[0])):
+            if(x > y): R[x][y] = 0
+
+    # Возвращаем Q и R
+    return np.transpose(Qt), R
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
