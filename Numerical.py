@@ -161,8 +161,8 @@ def Gauss(X, Y, E = 0.01):
         N = len(Xs)                                         # Узнаём, сколько корней известно
         Z = [X[y][len(X[y])-x-1]*Xs[x] for x in range(N) ]  # Умнажаем коэф на известные корни
         for x in range(len(Z)): Y[y] -= Z[x]                # Отнимаем от результата произведение известных корней и коэф
-        Xs.append( round(Y[y] / X[y][y] , int( abs( np.log10(E)))))    
-         
+        Xs.append( round(Y[y] / X[y][y] , int( abs( np.log10(E) ))) )    
+
     # Возвращаем список корней системы уровнений
     return Xs          
     
@@ -171,14 +171,11 @@ def Gauss(X, Y, E = 0.01):
 
 # Метод наименьших квадратов
 def MNK(X, Y, K = 3):
-
     def Pln(x,i): return x**i
-
     Ai, Bi, N = [], [], len(X) 
     for i in range(K):
         Ai.append([sum([Pln(X[n],i)*Pln(X[n],j) for n in range(N)]) for j in range(K)])
         Bi.append(sum([Pln(X[n],i)*Y[n] for n in range(N)]))
-
     return Ai, Bi
 
 # ------------------------------------------------------------------------------------------------
@@ -349,42 +346,54 @@ def CubicSpline(T,X):
 # Расчёт значений сплайнов по новой сетке
 def Interpol(T,X,Tk):
     
-    # Нахождение d элемента
-    def fD(n,C,T): return C[n+1] - C[n] / (T[n+1] - T[n]) 
+
+    # Нахождение 'b'
+    def fB(n,dA,dC,T): return ((dA[n+1]-dA[n]) / (T[n+1] - T[n])) - ((dC[n]/3)*(T[n+1] - T[n])) - ((dC[n+1]/6)*(T[n+1] - T[n]))
+
+    # Нахождение 'd' элемента
+    def fD(n,dC,T): return (dC[n+1] - dC[n]) / (T[n+1] - T[n]) 
 
     # Нахождение коэф интерполяции
-    def fS(t,X,B,C,T): 
+    def fS(t,dA,dB,dC,dD,T): 
         n = 0
-        while( t > T[n] ): n+=1
-        print(t, "\t", T[n], "\t", n)
-        return X[n] + B[n]*(t-T[n]) + (C[n] / 2) * (((t - T[n])**2)) + (fD(n,C,T)/6)*(((t - T[n])**3))
-
-    # Получаем значения
-    Aa = [ T[n+1] - T[n] for n in range(len(T)-3) ]
-    Ac = [ T[n+1] - T[n] for n in range(len(T)-3) ]
-    Ab = [ (T[n+1] - T[n]) + (T[n+2] - T[n+1]) * 2 for n in range(len(T)-2) ]
-    B = [ 6*( ((X[n+2] - X[n-1])/(T[n+2] - T[n+1])) - ((X[n+1] - X[n])/(T[n+1] - T[n])) ) for n in range(len(T)-2) ]
+        while( t > T[n] and n <= len(T)-2): n+=1
+        n -= 1
+        return dA[n] + (dB[n]*(t-T[n])) + ((dC[n] / 2) * ((t - T[n])**2)) + ((dD[n]/6)*(((t - T[n])**3)))
 
     # Переменные
-    N, C, Ek = len(T)-3, [0], []
+    N, C, Ek = len(X), [0], []
+
+    # Получаем значения
+    Aa = [ T[n+2] - T[n+1] for n in range(N-3) ]
+    Ac = [ T[n+2] - T[n+1] for n in range(N-3) ]
+    Ab = [ ((T[n+1] - T[n]) + (T[n+2] - T[n+1])) * 2 for n in range(N-2) ]
+    B = [ 6*( ((X[n+2] - X[n-1])/(T[n+2] - T[n+1])) - ((X[n+1] - X[n])/(T[n+1] - T[n])) ) for n in range(N-2) ]
 
     # Сводим к двухдиагональной матрице
-    for i in range(N):
+    for i in range(N-3):
         g = Aa[i] / Ab[i]
         Ab[i+1] -= g*Ac[i]
         B[i+1] -= g*B[i]
     
     # Сводим к однодиагональной матрице
-    for i in np.arange(N,0,-1): B[i-1] -= B[i]*(Ac[i-1]/Ab[i])
+    for i in np.arange(len(B)-1,0,-1): B[i-1] -= B[i]*(Ac[i-1]/Ab[i])
 
-    # Находим коэф.
-    for i in range(N+1):
+    # Находим 'c'
+    for i in range(N-2):
         if(Ab[i] == 0): return 0
         C.append(B[i]/Ab[i])
     C.append(0)
 
+    # Получаем массивы данных
+    dA,dC = X, C 
+    dB = [fB(n,dA,dC,T) for n in range(N-1)]
+    dD = [fD(n,dC,T) for n in range(N-1)]
+
+
+
+    print(len(dA),len(dB),len(dC),len(dD))
     # Возращаем интерполяцию
-    return [ fS(t,X,B,C,T) for t in Tk ]
+    return [ fS(t,dA,dB,dC,dD,T) for t in Tk ]
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
